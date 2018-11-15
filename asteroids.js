@@ -26,10 +26,19 @@ class Player{
         this.location = {x: screenwidth/2, y: screenheight/2};
         this.direction = 0;
         this.speed = 0;
-        this.length = 20;
+        this.length = 10;
         this.rotationspeed = 5;
         this.movespeed = 5;
         this.bullets = [];
+        this.score = 0;
+        this.lives = 3;
+
+        this.d = new Date();
+        this.lastshot = this.d.getTime();
+        this.reloadDelay = 500;
+
+        this.invincibleTime = 2000;
+        this.deadTime = this.d.getTime();
     }
     move(){
         this.location.x -= Math.sin((Math.PI / 180) * this.direction) * this.movespeed;
@@ -63,23 +72,45 @@ class Player{
         }
     }
     collision(point, radius){
-        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  + Math.pow((this.location.y - point.y),2) );
+        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
+                                  Math.pow((this.location.y - point.y),2) );
         if(distance < radius ){
-            console.log("colition");
+            
+            this.d = new Date();
+
+            if((this.d.getTime()-this.deadTime > this.invincibleTime)){
+                this.deadTime = this.d.getTime();
+                this.lives -= 1;  
+                console.log("colision");
+            }
+            
         }
     }
     update(){
-        //TODO
+        //updateting bullets
         for(var i in this.bullets){
+            if(!this.bullets[i]){
+                continue;
+            }
             this.bullets[i].update();
+            //out of bound bullets
+            let b = this.bullets[i]
+            if(b.location.x < 0 || b.location.x > screenwidth || b.location.y < 0 ||b.location.y > screenheight){
+                this.bullets.splice(i,1);
+            }
         }
     }
     addbullet(){
        // this.bullets.push(new Bullet({x: 0,y: 50},{x: 20, y:0}))
-        
-        this.bullets.push(new Bullet(rotate(this.location, {x: this.location.x -1, y: this.location.y - this.length*2}, this.direction),
-                                    {x: -Math.sin((Math.PI / 180) * this.direction)*20, y: -Math.cos((Math.PI / 180) * this.direction) * 20 }) );
-                                    
+       this.d = new Date();
+        if((this.d.getTime() - this.lastshot) > this.reloadDelay){
+            this.lastshot = this.d.getTime();
+
+            this.bullets.push(new Bullet(rotate(this.location, {x: this.location.x -1, y: this.location.y - this.length*2 }, this.direction),
+            {x: -Math.sin((Math.PI / 180) * this.direction)*20, y: -Math.cos((Math.PI / 180) * this.direction) * 20 }) );
+           
+        }
+         
     }
 }
 
@@ -107,19 +138,31 @@ class Game{
 
         this.myPlayer = new Player();
         this.asteroids = [];
-        this.asteroids.push(new Asteroid({x: 0, y: 300},{x: 5, y: 0}));
-        this.asteroids.push(new Asteroid({x: 600, y: 0},{x: -10, y: 3}));
+      //  this.asteroids.push(new Asteroid({x: 0, y: 300},{x: 5, y: 0}));
+      //  this.asteroids.push(new Asteroid({x: 600, y: 0},{x: -10, y: 3}));
 
         this.leftkey = false;   //keycode 37
         this.rightkey = false;  //keycode 39
         this.upkey = false;     //keycode 38
         this.spacekey = false;  //keycode 32
 
-
+        this.lvl = 1;
 
         document.addEventListener('keydown', this.keyDown);
         document.addEventListener('keyup', this.keyUp);
-        
+
+        this.gui = new Gui();
+        this.startlvl(1);
+    }
+    startlvl(lvl){
+        for(var i = 0; i <lvl*2; i++){
+            console.log("made astreroid");
+
+            this.asteroids.push(new Asteroid({x: Math.random()*screenwidth, y: Math.random()*screenheight},
+                                             {x: Math.random()*20 - 10, y: Math.random()*20 - 10}));
+
+            console.log(this.asteroids);
+        }
     }
     keyDown(event){
         if(event.keyCode       === 37){
@@ -146,43 +189,89 @@ class Game{
     }
     gameloop(){
 
-        //keyboard input logic
-        if(this.leftkey === true){   
-            this.myPlayer.direction+=this.myPlayer.rotationspeed;
-        }
-        if(this.rightkey === true){   
-            this.myPlayer.direction-=this.myPlayer.rotationspeed;
-        }
-        if(this.upkey === true){
-            this.myPlayer.move();
-        }
-        if(this.spacekey === true){
+        if(this.myPlayer.lives === 0){
+            this.gui.setDead(this.myPlayer.score);
+        }else{
+            //keyboard input logic
+            if(this.leftkey === true){   
+                this.myPlayer.direction+=this.myPlayer.rotationspeed;
+            }
+            if(this.rightkey === true){   
+                this.myPlayer.direction-=this.myPlayer.rotationspeed;
+            }
+            if(this.upkey === true){
+                this.myPlayer.move();
+            }
+            if(this.spacekey === true){
 
-            this.myPlayer.addbullet();
-        }
+                this.myPlayer.addbullet();
+            }
 
-        this.myPlayer.update();
-        //updating astroids
-        for (var a in this.asteroids){
-            this.asteroids[a].update();
-            this.myPlayer.collision(this.asteroids[a].location, this.asteroids[a].size);
-        }
+            this.myPlayer.update();
+            //updating astroids
+            for (var a in this.asteroids){
+                this.asteroids[a].update();
+                this.myPlayer.collision(this.asteroids[a].location, this.asteroids[a].size);
+            }
 
-        //drawing
-        ctx.clearRect(0, 0, screenwidth, screenheight);
-        for (var a in this.asteroids){
+            //checking if astroid is hit
+            for(var i in this.myPlayer.bullets){
+
+                if(!this.myPlayer.bullets[i]){
+                    continue;
+                }
+                for (var j in this.asteroids){
+                    if(!this.asteroids[j]){
+                        continue;
+                    }
+                    if(this.asteroids[j].collision(this.myPlayer.bullets[i].location)){
+                        console.log("hit");
+                        this.myPlayer.bullets.splice(i,1);
+                        this.asteroids.splice(j,1);
+                        this.myPlayer.score+=10;
+                    }
+                }
+            }
+
+            if(this.asteroids.length === 0){
+                this.lvl++;
+                this.startlvl(this.lvl);
+            }
+
+
+            //drawing
+            ctx.clearRect(0, 0, screenwidth, screenheight);
+            for (var a in this.asteroids){
+                
+                this.asteroids[a].draw();
+            }
+            //gui
+            this.gui.update(this.myPlayer.score, this.myPlayer.lives, this.lvl);
             
-            this.asteroids[a].draw();
-        }
-        
-        this.myPlayer.draw();
+            this.myPlayer.draw();
+    }
     }
 }
+
+class Gui{
+    constructor(){
+    
+    this.html = document.getElementById("gui");
+    this.html.innerHTML = "score: 10 lives: lvl:";
+    }
+    update(score, lives, lvl){
+        this.html.innerHTML = "score: "+score + " lives: " + lives + " lvl: " + lvl;
+    }
+    setDead(score){
+        this.html.innerHTML = "DEAD Score: "+score;
+    }
+ }
+
 class Asteroid{
     constructor(startposition, movement){
+        console.log(startposition);
 
-
-        this.location = startposition;
+       this.location = startposition;
         this.movedirection = movement;
         this.size = 30;
     }
@@ -195,7 +284,6 @@ class Asteroid{
     update(){
         this.location.x += this.movedirection.x;
         this.location.y += this.movedirection.y;
-
         
         //
         if(this.location.x  > screenwidth + this.size){
@@ -209,9 +297,16 @@ class Asteroid{
             this.location.y = screenheight + this.size;
         }
     }
+    collision(point){
+        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
+                                  Math.pow((this.location.y - point.y),2) );
+        if(distance < this.size ){
+            return true;
+        }
+    }
 }
 
 var myGame = new Game();
 
-setInterval(myGame.gameloop,100);
+setInterval(myGame.gameloop,30);
 

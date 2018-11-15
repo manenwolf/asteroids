@@ -3,8 +3,8 @@ var ctx = c.getContext("2d");
 
 
 
-var screenwidth = c.width;
-var screenheight = c.height;
+var screenWidth = c.width;
+var screenHeight = c.height;
 
 //rotation point around an origin
 function rotate(origin, point, angle) {
@@ -23,11 +23,11 @@ class Player{
     constructor(){
         this.move = this.move.bind(this);
 
-        this.location = {x: screenwidth/2, y: screenheight/2};
+        this.location = {x: screenWidth/2, y: screenHeight/2};
         this.direction = 0;
         this.maxspeed = 10;
         this.length = 10;
-        this.rotationspeed = 10 ;
+        this.rotationspeed = 20 ;
         this.movespeedX = 0;
         this.movespeedY = 0;
         this.maxspeed = 10;
@@ -39,8 +39,10 @@ class Player{
         this.lastshot = this.d.getTime();
         this.reloadDelay = 500;
 
-        this.invincibleTime = 2000;
+        this.invincibleTime = 1000;
         this.deadTime = this.d.getTime();
+        this.lastTick = this.d.getTime();
+        this.isTurning = 0;
     }
     move(){
         this.movespeedX += Math.sin((Math.PI / 180) * this.direction) * 0.2;
@@ -72,7 +74,14 @@ class Player{
         ctx.moveTo(point1.x, point1.y);
         ctx.lineTo(point2.x, point2.y);
         ctx.lineTo(point3.x, point3.y);
-        ctx.fill();
+        ctx.lineTo(point1.x, point1.y);
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#ffffff';
+        if((this.d.getTime()-this.deadTime < this.invincibleTime)){
+            ctx.stroke();
+        }else{
+            ctx.fill();
+        }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
 
@@ -80,6 +89,10 @@ class Player{
         for(var i in this.bullets){
             this.bullets[i].draw();
         }
+    }
+    turn(sign){
+        this.isTurning = sign;
+
     }
     collision(point, radius){
         var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
@@ -105,21 +118,26 @@ class Player{
             this.bullets[i].update();
             //out of bound bullets
             let b = this.bullets[i]
-            if(b.location.x < 0 || b.location.x > screenwidth || b.location.y < 0 ||b.location.y > screenheight){
+            if(b.location.x < 0 || b.location.x > screenWidth || b.location.y < 0 ||b.location.y > screenHeight){
                 this.bullets.splice(i,1);
             }
         }
-        this.location.x -=  this.movespeedX;
-        this.location.y -= this.movespeedY;
+        this.d = new Date();
+        var elapsedTime = (this.d.getTime() - this.lastTick)/100;
+        this.lastTick = this.d.getTime();
+
+        this.location.x -=  this.movespeedX * elapsedTime;
+        this.location.y -= this.movespeedY * elapsedTime;
+        this.direction += this.rotationspeed * this.isTurning * elapsedTime;
 
         if(this.location.x < 0){
-            this.location.x = screenwidth;
-        }else if(this.location.x > screenwidth){
+            this.location.x = screenWidth;
+        }else if(this.location.x > screenWidth){
             this.location.x = 0;
         }
         if(this.location.y < 0){
-            this.location.y = screenheight;
-        }else if(this.location.y > screenheight){
+            this.location.y = screenHeight;
+        }else if(this.location.y > screenHeight){
             this.location.y = 0;
         }   
 
@@ -131,7 +149,7 @@ class Player{
             this.lastshot = this.d.getTime();
 
             this.bullets.push(new Bullet(rotate(this.location, {x: this.location.x -1, y: this.location.y - this.length*2 }, this.direction),
-            {x: -Math.sin((Math.PI / 180) * this.direction)*20, y: -Math.cos((Math.PI / 180) * this.direction) * 20 }) );
+            {x: -Math.sin((Math.PI / 180) * this.direction), y: -Math.cos((Math.PI / 180) * this.direction) }) );
            
         }
          
@@ -142,10 +160,17 @@ class Bullet{
     constructor(location, direction){
         this.location = location;
         this.direction = direction;
+        this.speed = 50;
+
+        this.d = new Date();
+        this.lastTick = this.d.getTime();
     }
     update(){
-        this.location.x += this.direction.x;
-        this.location.y += this.direction.y;
+        this.d = new Date();
+        var elapsedTime = (this.d.getTime() - this.lastTick)/100;
+        this.lastTick = this.d.getTime();
+        this.location.x += this.direction.x * elapsedTime * this.speed;
+        this.location.y += this.direction.y * elapsedTime * this.speed;
     }
     draw(){
         ctx.fillRect(this.location.x, this.location.y, 3, 3);
@@ -182,11 +207,13 @@ class Game{
         for(var i = 0; i <lvl*2; i++){
             console.log("made astreroid");
 
-            this.asteroids.push(new Asteroid({x: Math.random()*screenwidth, y: Math.random()*screenheight},
+            this.asteroids.push(new Asteroid({x: Math.random()*screenWidth, y: Math.random()*screenHeight},
                                              {x: Math.random()*20 - 10, y: Math.random()*20 - 10}));
 
             console.log(this.asteroids);
         }
+        this.d = new Date();
+        this.myPlayer.deadTime = this.d.getTime();
     }
     keyDown(event){
         if(event.keyCode       === 37){
@@ -217,11 +244,14 @@ class Game{
             this.gui.setDead(this.myPlayer.score);
         }else{
             //keyboard input logic
-            if(this.leftkey === true){   
-                this.myPlayer.direction+=this.myPlayer.rotationspeed;
+            if(this.leftkey === true){ 
+                this.myPlayer.turn(1);  
             }
-            if(this.rightkey === true){   
-                this.myPlayer.direction-=this.myPlayer.rotationspeed;
+            if(this.rightkey === true){  
+                this.myPlayer.turn(-1); 
+            }
+            if((this.leftkey && this.rightkey) ||(!this.leftkey && !this.rightkey) ){
+                this.myPlayer.turn(0);
             }
             if(this.upkey === true){
                 this.myPlayer.move();
@@ -264,7 +294,8 @@ class Game{
 
 
             //drawing
-            ctx.clearRect(0, 0, screenwidth, screenheight);
+            ctx.fillStyle="black";
+            ctx.fillRect(0, 0, screenWidth, screenHeight);
             for (var a in this.asteroids){
                 
                 this.asteroids[a].draw();
@@ -298,27 +329,63 @@ class Asteroid{
        this.location = startposition;
         this.movedirection = movement;
         this.size = 30;
+
+        this.points = [];
+
+
+        this.d = new Date();
+        this.lastTick = this.d.getTime();
+
+        var points = Math.random()*10 + 5;
+        for(var i = 0; i< points; i++){
+            var point = {x: 0, y:0};
+            var angle = Math.PI *2 /(points)*i;
+            point.x = Math.cos(angle) * this.size * (Math.random()+ 0.5);
+            point.y = Math.sin(angle) * this.size * (Math.random()+ 0.5);
+            this.points.push(point);
+        }
     }
     draw(){
+        /* round asteroids
         ctx.beginPath();
         ctx.arc(this.location.x,this.location.y,this.size,0,2*Math.PI);
+        ctx.strokeStyle = '#ffffff';
         ctx.stroke();
+        */
+       ctx.beginPath();
+       ctx.moveTo(this.location.x + this.points[0].x, this.location.y + this.points[0].y);
+       for(var i = 1; i< this.points.length; i++){
+        ctx.lineTo(this.location.x + this.points[i].x, this.location.y + this.points[i].y);
+
+       }
+       ctx.lineTo(this.location.x + this.points[0].x, this.location.y + this.points[0].y)
+
+       ctx.strokeStyle = '#ffffff';
+       ctx.stroke();
+
 
     }
     update(){
-        this.location.x += this.movedirection.x;
-        this.location.y += this.movedirection.y;
         
+        this.d = new Date();
+        var elapsedTime = (this.d.getTime() - this.lastTick)/100;
+        this.lastTick = this.d.getTime();
+
+        this.location.x += this.movedirection.x * elapsedTime;
+        this.location.y += this.movedirection.y * elapsedTime;
+        
+
+
         //
-        if(this.location.x  > screenwidth + this.size){
+        if(this.location.x  > screenWidth + this.size){
             this.location.x = - this.size;
         }else if(this.location.x < - this.size){
-            this.location.x = screenwidth + this.size;
+            this.location.x = screenWidth + this.size;
         }
-        if(this.location.y  > screenheight + this.size){
+        if(this.location.y  > screenHeight + this.size){
             this.location.y = - this.size;
         }else if(this.location.y < - this.size){
-            this.location.y = screenheight + this.size;
+            this.location.y = screenHeight + this.size;
         }
     }
     collision(point){

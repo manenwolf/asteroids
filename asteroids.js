@@ -3,8 +3,8 @@ var ctx = c.getContext("2d");
 
 
 
-var screenwidth = 600;
-var screenheight = 400;
+var screenwidth = c.width;
+var screenheight = c.height;
 
 //rotation point around an origin
 function rotate(origin, point, angle) {
@@ -25,10 +25,12 @@ class Player{
 
         this.location = {x: screenwidth/2, y: screenheight/2};
         this.direction = 0;
-        this.speed = 0;
+        this.maxspeed = 10;
         this.length = 10;
-        this.rotationspeed = 5;
-        this.movespeed = 5;
+        this.rotationspeed = 10 ;
+        this.movespeedX = 0;
+        this.movespeedY = 0;
+        this.maxspeed = 10;
         this.bullets = [];
         this.score = 0;
         this.lives = 3;
@@ -41,8 +43,16 @@ class Player{
         this.deadTime = this.d.getTime();
     }
     move(){
-        this.location.x -= Math.sin((Math.PI / 180) * this.direction) * this.movespeed;
-        this.location.y -= Math.cos((Math.PI / 180) * this.direction) * this.movespeed;
+        this.movespeedX += Math.sin((Math.PI / 180) * this.direction) * 0.2;
+        this.movespeedY += Math.cos((Math.PI / 180) * this.direction) * 0.2;
+        if(Math.abs(this.movespeedX) > this.maxspeed ){
+            this.movespeedX = this.maxspeed*Math.sign(this.movespeedX);
+        }
+        if(Math.abs(this.movespeedY) > this.maxspeed ){
+            this.movespeedY = this.maxspeed*Math.sign(this.movespeedY);
+        }
+
+
     }
 
     draw(){
@@ -99,6 +109,20 @@ class Player{
                 this.bullets.splice(i,1);
             }
         }
+        this.location.x -=  this.movespeedX;
+        this.location.y -= this.movespeedY;
+
+        if(this.location.x < 0){
+            this.location.x = screenwidth;
+        }else if(this.location.x > screenwidth){
+            this.location.x = 0;
+        }
+        if(this.location.y < 0){
+            this.location.y = screenheight;
+        }else if(this.location.y > screenheight){
+            this.location.y = 0;
+        }   
+
     }
     addbullet(){
        // this.bullets.push(new Bullet({x: 0,y: 50},{x: 20, y:0}))

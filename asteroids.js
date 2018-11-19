@@ -187,13 +187,14 @@ class Game{
 
         this.myPlayer = new Player();
         this.asteroids = [];
+        this.explosions = [];
       //  this.asteroids.push(new Asteroid({x: 0, y: 300},{x: 5, y: 0}));
       //  this.asteroids.push(new Asteroid({x: 600, y: 0},{x: -10, y: 3}));
 
-        this.leftkey = false;   //keycode 37
-        this.rightkey = false;  //keycode 39
-        this.upkey = false;     //keycode 38
-        this.spacekey = false;  //keycode 32
+        this.leftKey = false;   //keycode 37
+        this.rightKey = false;  //keycode 39
+        this.upKey = false;     //keycode 38
+        this.spaceKey = false;  //keycode 32
 
         this.lvl = 1;
 
@@ -208,34 +209,33 @@ class Game{
             console.log("made astreroid");
 
             this.asteroids.push(new Asteroid({x: Math.random()*screenWidth, y: Math.random()*screenHeight},
-                                             {x: Math.random()*20 - 10, y: Math.random()*20 - 10}));
+                                             {x: Math.random()*20 - 10, y: Math.random()*20 - 10},60));
 
-            console.log(this.asteroids);
         }
         this.d = new Date();
         this.myPlayer.deadTime = this.d.getTime();
     }
     keyDown(event){
         if(event.keyCode       === 37){
-            this.leftkey = true;
+            this.leftKey = true;
         }else if(event.keyCode === 39){
-            this.rightkey = true;
+            this.rightKey = true;
         }else if(event.keyCode === 38){
-            this.upkey = true;
+            this.upKey = true;
         }else if(event.keyCode === 32){
-            this.spacekey = true;
+            this.spaceKey = true;
         }
     }
     keyUp(event){
 
         if(event.keyCode       === 37){
-            this.leftkey = false;
+            this.leftKey = false;
         }else if(event.keyCode === 39){
-            this.rightkey = false;
+            this.rightKey = false;
         }else if(event.keyCode === 38){
-            this.upkey = false;
+            this.upKey = false;
         }else if(event.keyCode === 32){
-            this.spacekey = false;
+            this.spaceKey = false;
         }
     }
     gameloop(){
@@ -244,19 +244,19 @@ class Game{
             this.gui.setDead(this.myPlayer.score);
         }else{
             //keyboard input logic
-            if(this.leftkey === true){ 
+            if(this.leftKey === true){ 
                 this.myPlayer.turn(1);  
             }
-            if(this.rightkey === true){  
+            if(this.rightKey === true){  
                 this.myPlayer.turn(-1); 
             }
-            if((this.leftkey && this.rightkey) ||(!this.leftkey && !this.rightkey) ){
+            if((this.leftKey && this.rightKey) ||(!this.leftKey && !this.rightKey) ){
                 this.myPlayer.turn(0);
             }
-            if(this.upkey === true){
+            if(this.upKey === true){
                 this.myPlayer.move();
             }
-            if(this.spacekey === true){
+            if(this.spaceKey === true){
 
                 this.myPlayer.addbullet();
             }
@@ -280,9 +280,19 @@ class Game{
                     }
                     if(this.asteroids[j].collision(this.myPlayer.bullets[i].location)){
                         console.log("hit");
+                        var astroid = this.asteroids[j];
+                        if(astroid.size > 20){
+                            this.asteroids.push(new Asteroid({x: astroid.location.x, y: astroid.location.y}, 
+                                {x:  Math.random()*20 - 10, y: Math.random()*20 - 10} ,astroid.size - 20));
+                            this.asteroids.push(new Asteroid({x: astroid.location.x, y: astroid.location.y}, 
+                                    {x:  Math.random()*20 - 10, y:  Math.random()*20 - 10} ,astroid.size - 20));
+                        }
+                        this.explosions.push(new Explosion(astroid.location.x,astroid.location.y));
+                        astroid.audio.play();
                         this.myPlayer.bullets.splice(i,1);
                         this.asteroids.splice(j,1);
                         this.myPlayer.score+=10;
+                    
                     }
                 }
             }
@@ -300,7 +310,19 @@ class Game{
                 
                 this.asteroids[a].draw();
             }
+            //explotions
+            for(var i = 0;i< this.explosions.length;i++){
+                if(!this.explosions[i]){
+                    continue;
+                }
+                this.explosions[i].draw();
+                if(this.explosions[i].isDead()){
+                    this.explosions.splice(i,1);
+                }
+            }
+
             //gui
+
             this.gui.update(this.myPlayer.score, this.myPlayer.lives, this.lvl);
             
             this.myPlayer.draw();
@@ -311,24 +333,38 @@ class Game{
 class Gui{
     constructor(){
     
-    this.html = document.getElementById("gui");
-    this.html.innerHTML = "score: 10 lives: lvl:";
+    //this.html = document.getElementById("gui");
+    //this.html.innerHTML = "score: 10 lives: lvl:";
     }
     update(score, lives, lvl){
-        this.html.innerHTML = "score: "+score + " lives: " + lives + " lvl: " + lvl;
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText(score,50,20);
+        var livesplayer = new Player();
+        livesplayer.location = {x: 50,y: 50};
+        for(var i = 0;i<lives;i++){
+            livesplayer.draw();
+            livesplayer.location.x +=30;
+        }
+
+        //this.html.innerHTML = "score: "+score + " lives: " + lives + " lvl: " + lvl;
     }
     setDead(score){
-        this.html.innerHTML = "DEAD Score: "+score;
+        //this.html.innerHTML = "DEAD Score: "+score;
     }
  }
 
 class Asteroid{
-    constructor(startposition, movement){
-        console.log(startposition);
+    constructor(startPosition, movement, size){
+        
 
-       this.location = startposition;
-        this.movedirection = movement;
-        this.size = 30;
+       this.location = startPosition;
+        this.moveDirection = movement;
+        this.size = size ;
+
+        console.log("new astroid");
+        this.audio = new Audio('./Explosion.wav');
+        
 
         this.points = [];
 
@@ -371,8 +407,9 @@ class Asteroid{
         var elapsedTime = (this.d.getTime() - this.lastTick)/100;
         this.lastTick = this.d.getTime();
 
-        this.location.x += this.movedirection.x * elapsedTime;
-        this.location.y += this.movedirection.y * elapsedTime;
+
+        this.location.x += this.moveDirection.x * elapsedTime;
+        this.location.y += this.moveDirection.y * elapsedTime;
         
 
 
@@ -393,6 +430,31 @@ class Asteroid{
                                   Math.pow((this.location.y - point.y),2) );
         if(distance < this.size ){
             return true;
+        }
+    }
+}
+class Explosion{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+        this.d = new Date();
+        this.created = this.d.getTime();
+        this.lifespan = 2000;
+    }
+    isDead(){
+        this.d = new Date();
+        var elapsedTime = this.d.getTime() - this.created;
+        if( elapsedTime > this.lifespan){
+            return true;
+        }
+        return false;
+    }
+    draw(){
+        this.d = new Date();
+        var elapsedTime = this.d.getTime() - this.created;
+        for(var i = 0; i < 12; i++){
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(this.x + Math.sin((Math.PI / 180)*30*i)*elapsedTime/20, this.y+ Math.cos((Math.PI / 180)*30*i)*elapsedTime/20,1,1);
         }
     }
 }

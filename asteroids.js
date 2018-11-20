@@ -43,6 +43,7 @@ class Player{
         this.deadTime = this.d.getTime();
         this.lastTick = this.d.getTime();
         this.isTurning = 0;
+        this.isTrusting = false;
     }
     move(){
         this.movespeedX += Math.sin((Math.PI / 180) * this.direction) * 0.2;
@@ -60,14 +61,28 @@ class Player{
     draw(){
         //initial triangle
         var point1 = {x: this.location.x ,                  y: this.location.y - this.length*2};
-        var point2 = {x: this.location.x - this.length ,    y: this.location.y +this.length};
-        var point3 = {x: this.location.x + this.length ,    y: this.location.y +this.length};
+        var point2 = {x: this.location.x - this.length ,    y: this.location.y + this.length};
+        var point3 = {x: this.location.x + this.length ,    y: this.location.y + this.length};
         var origin = {x: this.location.x,                   y: this.location.y};
+
+        var point4 = {x:this.location.x,                    y: this.location.y + this.length};
+        var point5 = {x:this.location.x,                    y: this.location.y + this.length + 10};
+        var point6 = {x:this.location.x - 5,               y: this.location.y + this.length + 10};
+        var point7 = {x:this.location.x + 5,               y: this.location.y + this.length + 10};
+        var point8 = {x:this.location.x - 10,               y: this.location.y + this.length + 10};
+        var point9 = {x:this.location.x + 10,               y: this.location.y + this.length + 10};
+
 
         //rotated triangle
         point1 = rotate(origin, point1, this.direction);
         point2 = rotate(origin, point2, this.direction);
         point3 = rotate(origin, point3, this.direction);
+        point4 = rotate(origin, point4, this.direction);
+        point5 = rotate(origin, point5, this.direction);
+        point6 = rotate(origin, point6, this.direction);
+        point7 = rotate(origin, point7, this.direction);
+        point8 = rotate(origin, point8, this.direction);
+        point9 = rotate(origin, point9, this.direction);
 
         //drawing the triangle
         ctx.beginPath();
@@ -82,9 +97,24 @@ class Player{
         }else{
             ctx.fill();
         }
+        if(this.isTrusting === true){
+            ctx.moveTo(point4.x,point4.y);
+            ctx.lineTo(point5.x,point5.y);
+            ctx.moveTo(point4.x,point4.y);
+            ctx.lineTo(point6.x,point6.y);
+            ctx.moveTo(point4.x,point4.y);
+            ctx.lineTo(point7.x,point7.y);
+            ctx.moveTo(point4.x,point4.y);
+            ctx.lineTo(point8.x,point8.y);
+            ctx.moveTo(point4.x,point4.y);
+            ctx.lineTo(point9.x,point9.y);
+            ctx.stroke();
+        }
+        
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
 
+    
         //draw bullets
         for(var i in this.bullets){
             this.bullets[i].draw();
@@ -255,6 +285,11 @@ class Game{
             }
             if(this.upKey === true){
                 this.myPlayer.move();
+                this.myPlayer.isTrusting = true;
+                
+            }
+            if(this.upKey === false){
+                this.myPlayer.isTrusting = false;
             }
             if(this.spaceKey === true){
 
@@ -351,6 +386,9 @@ class Gui{
     }
     setDead(score){
         //this.html.innerHTML = "DEAD Score: "+score;
+        ctx.fillStyle = "white";
+        ctx.font = "50px Arial";
+        ctx.fillText("you died",screenWidth/2 -150,screenHeight/2);
     }
  }
 

@@ -16,7 +16,78 @@ function rotate(origin, point, angle) {
         result.y = (cos * (point.y - origin.y)) - (sin * (point.x - origin.x)) + origin.y;
     return result;
 }
+function sameSign(n1, n2){
+    return n1*n2 > 0;
+}
+var eps = 0.0001;
+function between(a, b, c) {
+            return a-eps <= b && b <= c+eps;
+        }
+function intersect(point1, point2, point3, point4){
+        var x1 = point1.x , y1 = point1.y;
+        var x2 = point2.x , y2 = point2.y;
+        var x3 = point3.x , y3 = point3.y;
+        var x4 = point4.x , y4 = point4.y;
 
+        /*
+        console.log(point1);
+        console.log(point2);      
+        console.log(point3);
+        console.log(point4);
+        */
+
+            var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4)) /
+                    ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+
+            var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4)) /
+                    ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+
+            //console.log("x: "+x+",y: "+y);
+            if (isNaN(x)||isNaN(y)) {
+                console.log("error");
+
+                return false;
+            } else {
+                if (x1>=x2) {
+                    if (!between(x2, x, x1)) {return false;}
+                } else {
+                    if (!between(x1, x, x2)) {return false;}
+                }
+                if (y1>=y2) {
+                    if (!between(y2, y, y1)) {return false;}
+                } else {
+                    if (!between(y1, y, y2)) {return false;}
+                }
+                if (x3>=x4) {
+                    if (!between(x4, x, x3)) {return false;}
+                } else {
+                    if (!between(x3, x, x4)) {return false;}
+                }
+                if (y3>=y4) {
+                    if (!between(y4, y, y3)) {return false;}
+                } else {
+                    if (!between(y3, y, y4)) {return false;}
+                }
+            }
+            return {x: x, y: y};
+        }
+
+
+function collision(polygon1, polygon2) {
+    //console.log(polygon1);
+    //console.log(polygon2);
+    
+    for(var i = 0;i < polygon1.length - 1;i++){
+        for(var j = 0;j < polygon2.length - 1;j++){
+            if(intersect(polygon1[i], polygon1[i+1], polygon2[j], polygon2[j+1])){
+                console.log(intersect(polygon1[i], polygon1[i+1], polygon2[j], polygon2[j+1]));
+                return true;
+            }
+        }  
+    }    
+    return false;
+    
+};
 
 
 class Player{
@@ -65,12 +136,10 @@ class Player{
         var point3 = {x: this.location.x + this.length ,    y: this.location.y + this.length};
         var origin = {x: this.location.x,                   y: this.location.y};
 
-        var point4 = {x:this.location.x,                    y: this.location.y + this.length};
-        var point5 = {x:this.location.x,                    y: this.location.y + this.length + 10};
-        var point6 = {x:this.location.x - 5,               y: this.location.y + this.length + 10};
-        var point7 = {x:this.location.x + 5,               y: this.location.y + this.length + 10};
-        var point8 = {x:this.location.x - 10,               y: this.location.y + this.length + 10};
-        var point9 = {x:this.location.x + 10,               y: this.location.y + this.length + 10};
+        var point4 = {x:this.location.x - 5,                    y: this.location.y + this.length};
+        var point5 = {x:this.location.x,                        y: this.location.y + this.length + 10};
+        var point6 = {x:this.location.x + 5,                    y: this.location.y + this.length };
+        
 
 
         //rotated triangle
@@ -80,9 +149,7 @@ class Player{
         point4 = rotate(origin, point4, this.direction);
         point5 = rotate(origin, point5, this.direction);
         point6 = rotate(origin, point6, this.direction);
-        point7 = rotate(origin, point7, this.direction);
-        point8 = rotate(origin, point8, this.direction);
-        point9 = rotate(origin, point9, this.direction);
+
 
         //drawing the triangle
         ctx.beginPath();
@@ -98,17 +165,15 @@ class Player{
             ctx.fill();
         }
         if(this.isTrusting === true){
-            ctx.moveTo(point4.x,point4.y);
-            ctx.lineTo(point5.x,point5.y);
-            ctx.moveTo(point4.x,point4.y);
-            ctx.lineTo(point6.x,point6.y);
-            ctx.moveTo(point4.x,point4.y);
-            ctx.lineTo(point7.x,point7.y);
-            ctx.moveTo(point4.x,point4.y);
-            ctx.lineTo(point8.x,point8.y);
-            ctx.moveTo(point4.x,point4.y);
-            ctx.lineTo(point9.x,point9.y);
-            ctx.stroke();
+            this.d = new Date();
+            if((this.d.getTime()%100) > 50){
+               ctx.moveTo(point4.x,point4.y);
+                ctx.lineTo(point5.x,point5.y);
+                ctx.lineTo(point6.x,point6.y);
+           
+                ctx.stroke(); 
+            }
+            
         }
         
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -124,7 +189,34 @@ class Player{
         this.isTurning = sign;
 
     }
-    collision(point, radius){
+    collision(astroidspoly,astroidorigin){
+        //calculating asteroids coordinates
+        var points  = [];
+        for(var i = 0;i< astroidspoly.length;i++){
+            points.push({x: astroidspoly[i].x +astroidorigin.x,
+                y: astroidspoly[i].y +astroidorigin.y});
+        }
+
+        var point1 = {x: this.location.x ,                  y: this.location.y - this.length*2};
+        var point2 = {x: this.location.x - this.length ,    y: this.location.y + this.length};
+        var point3 = {x: this.location.x + this.length ,    y: this.location.y + this.length};
+        var origin = {x: this.location.x,                   y: this.location.y};
+
+        point1 = rotate(origin, point1, this.direction);
+        point2 = rotate(origin, point2, this.direction);
+        point3 = rotate(origin, point3, this.direction);
+
+        if( collision(points,[point1,point2,point3])){
+            this.d = new Date();
+
+            if((this.d.getTime()-this.deadTime > this.invincibleTime)){
+                this.deadTime = this.d.getTime();
+                this.lives -= 1;  
+                console.log("colision");
+            }
+        }
+
+        /*
         var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
                                   Math.pow((this.location.y - point.y),2) );
         if(distance < radius ){
@@ -138,6 +230,7 @@ class Player{
             }
             
         }
+        */
     }
     update(){
         //updateting bullets
@@ -188,8 +281,8 @@ class Player{
 
 class Bullet{
     constructor(location, direction){
-        this.location = location;
-        this.direction = direction;
+        this.location = {x:location.x,y:location.y};
+        this.direction = {x:direction.x,y:direction.y};
         this.speed = 50;
 
         this.d = new Date();
@@ -236,7 +329,7 @@ class Game{
     }
     startlvl(lvl){
         for(var i = 0; i <lvl*2; i++){
-            console.log("made astreroid");
+
 
             this.asteroids.push(new Asteroid({x: Math.random()*screenWidth, y: Math.random()*screenHeight},
                                              {x: Math.random()*20 - 10, y: Math.random()*20 - 10},60));
@@ -300,19 +393,18 @@ class Game{
             //updating astroids
             for (var a in this.asteroids){
                 this.asteroids[a].update();
-                this.myPlayer.collision(this.asteroids[a].location, this.asteroids[a].size);
+                this.myPlayer.collision(this.asteroids[a].points, this.asteroids[a].location);
             }
 
             //checking if astroid is hit
             for(var i in this.myPlayer.bullets){
 
-                if(!this.myPlayer.bullets[i]){
-                    continue;
-                }
+                
                 for (var j in this.asteroids){
-                    if(!this.asteroids[j]){
+                    if(!this.asteroids[j] || !this.myPlayer.bullets[i]){
                         continue;
                     }
+                    
                     if(this.asteroids[j].collision(this.myPlayer.bullets[i].location)){
                         console.log("hit");
                         var astroid = this.asteroids[j];
@@ -400,7 +492,6 @@ class Asteroid{
         this.moveDirection = movement;
         this.size = size ;
 
-        console.log("new astroid");
         this.audio = new Audio('./Explosion.wav');
         
 
@@ -464,11 +555,14 @@ class Asteroid{
         }
     }
     collision(point){
+        
         var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
                                   Math.pow((this.location.y - point.y),2) );
         if(distance < this.size ){
             return true;
         }
+        
+       return false;
     }
 }
 class Explosion{
@@ -498,6 +592,25 @@ class Explosion{
 }
 
 var myGame = new Game();
-
 setInterval(myGame.gameloop,30);
+
+/*
+var p1 = {x: 0,y: 0};
+var p2 = {x: 10,y: 10};
+var p3 = {x: 0,y: 10};
+var p4 = {x: 10,y: 0};
+
+var testplayer = new Player();
+var testasteroid = new Asteroid({x: 550,y: 300},{x:0,y:0},60);
+ctx.fillStyle="black";
+ctx.fillRect(0, 0, screenWidth, screenHeight);
+testplayer.draw();
+testasteroid.draw();
+console.log(testplayer.collision(testasteroid.points, testasteroid.location));
+console.log("test");
+console.log(intersect(p1,p2,p3,p4));
+*/
+
+
+
 

@@ -19,22 +19,18 @@ function rotate(origin, point, angle) {
 function sameSign(n1, n2){
     return n1*n2 > 0;
 }
+
 var eps = 0.0001;
 function between(a, b, c) {
             return a-eps <= b && b <= c+eps;
-        }
+}
+
 function intersect(point1, point2, point3, point4){
         var x1 = point1.x , y1 = point1.y;
         var x2 = point2.x , y2 = point2.y;
         var x3 = point3.x , y3 = point3.y;
         var x4 = point4.x , y4 = point4.y;
 
-        /*
-        console.log(point1);
-        console.log(point2);      
-        console.log(point3);
-        console.log(point4);
-        */
 
             var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4)) /
                     ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
@@ -42,7 +38,6 @@ function intersect(point1, point2, point3, point4){
             var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4)) /
                     ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
 
-            //console.log("x: "+x+",y: "+y);
             if (isNaN(x)||isNaN(y)) {
                 console.log("error");
 
@@ -74,19 +69,15 @@ function intersect(point1, point2, point3, point4){
 
 
 function collision(polygon1, polygon2) {
-    //console.log(polygon1);
-    //console.log(polygon2);
-    
-    for(var i = 0;i < polygon1.length - 1;i++){
-        for(var j = 0;j < polygon2.length - 1;j++){
+
+    for(var i = 0;i < polygon1.length - 1; i++){
+        for(var j = 0;j < polygon2.length - 1; j++){
             if(intersect(polygon1[i], polygon1[i+1], polygon2[j], polygon2[j+1])){
-                console.log(intersect(polygon1[i], polygon1[i+1], polygon2[j], polygon2[j+1]));
                 return true;
             }
         }  
     }    
     return false;
-    
 };
 
 
@@ -117,6 +108,7 @@ class Player{
         this.isTrusting = false;
     }
     move(){
+
         this.movespeedX += Math.sin((Math.PI / 180) * this.direction) * 0.2;
         this.movespeedY += Math.cos((Math.PI / 180) * this.direction) * 0.2;
         if(Math.abs(this.movespeedX) > this.maxspeed ){
@@ -126,19 +118,18 @@ class Player{
             this.movespeedY = this.maxspeed*Math.sign(this.movespeedY);
         }
 
-
     }
 
     draw(){
         //initial triangle
-        var point1 = {x: this.location.x ,                  y: this.location.y - this.length*2};
-        var point2 = {x: this.location.x - this.length ,    y: this.location.y + this.length};
-        var point3 = {x: this.location.x + this.length ,    y: this.location.y + this.length};
+        var point1 = {x: this.location.x,                   y: this.location.y - this.length*2};
+        var point2 = {x: this.location.x - this.length,     y: this.location.y + this.length};
+        var point3 = {x: this.location.x + this.length,     y: this.location.y + this.length};
         var origin = {x: this.location.x,                   y: this.location.y};
 
-        var point4 = {x:this.location.x - 5,                    y: this.location.y + this.length};
-        var point5 = {x:this.location.x,                        y: this.location.y + this.length + 10};
-        var point6 = {x:this.location.x + 5,                    y: this.location.y + this.length };
+        var point4 = {x:this.location.x - 5,                y: this.location.y + this.length};
+        var point5 = {x:this.location.x,                    y: this.location.y + this.length + 10};
+        var point6 = {x:this.location.x + 5,                y: this.location.y + this.length };
         
 
 
@@ -167,10 +158,9 @@ class Player{
         if(this.isTrusting === true){
             this.d = new Date();
             if((this.d.getTime()%100) > 50){
-               ctx.moveTo(point4.x,point4.y);
+                ctx.moveTo(point4.x,point4.y);
                 ctx.lineTo(point5.x,point5.y);
-                ctx.lineTo(point6.x,point6.y);
-           
+                ctx.lineTo(point6.x,point6.y);           
                 ctx.stroke(); 
             }
             
@@ -216,21 +206,6 @@ class Player{
             }
         }
 
-        /*
-        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
-                                  Math.pow((this.location.y - point.y),2) );
-        if(distance < radius ){
-            
-            this.d = new Date();
-
-            if((this.d.getTime()-this.deadTime > this.invincibleTime)){
-                this.deadTime = this.d.getTime();
-                this.lives -= 1;  
-                console.log("colision");
-            }
-            
-        }
-        */
     }
     update(){
         //updateting bullets
@@ -241,7 +216,8 @@ class Player{
             this.bullets[i].update();
             //out of bound bullets
             let b = this.bullets[i]
-            if(b.location.x < 0 || b.location.x > screenWidth || b.location.y < 0 ||b.location.y > screenHeight){
+            if(b.location.x < 0 || b.location.x > screenWidth ||
+                 b.location.y < 0 ||b.location.y > screenHeight){
                 this.bullets.splice(i,1);
             }
         }
@@ -266,13 +242,12 @@ class Player{
 
     }
     addbullet(){
-       // this.bullets.push(new Bullet({x: 0,y: 50},{x: 20, y:0}))
-       this.d = new Date();
+        this.d = new Date();
         if((this.d.getTime() - this.lastshot) > this.reloadDelay){
             this.lastshot = this.d.getTime();
 
             this.bullets.push(new Bullet(rotate(this.location, {x: this.location.x -1, y: this.location.y - this.length*2 }, this.direction),
-            {x: -Math.sin((Math.PI / 180) * this.direction), y: -Math.cos((Math.PI / 180) * this.direction) }) );
+            {x: -Math.sin((Math.PI / 180) * this.direction), y: - Math.cos((Math.PI / 180) * this.direction) }) );
            
         }
          
@@ -281,8 +256,8 @@ class Player{
 
 class Bullet{
     constructor(location, direction){
-        this.location = {x:location.x,y:location.y};
-        this.direction = {x:direction.x,y:direction.y};
+        this.location = {x:location.x, y:location.y};
+        this.direction = {x:direction.x, y:direction.y};
         this.speed = 50;
 
         this.d = new Date();
@@ -311,8 +286,6 @@ class Game{
         this.myPlayer = new Player();
         this.asteroids = [];
         this.explosions = [];
-      //  this.asteroids.push(new Asteroid({x: 0, y: 300},{x: 5, y: 0}));
-      //  this.asteroids.push(new Asteroid({x: 600, y: 0},{x: -10, y: 3}));
 
         this.leftKey = false;   //keycode 37
         this.rightKey = false;  //keycode 39
@@ -330,9 +303,8 @@ class Game{
     startlvl(lvl){
         for(var i = 0; i <lvl*2; i++){
 
-
             this.asteroids.push(new Asteroid({x: Math.random()*screenWidth, y: Math.random()*screenHeight},
-                                             {x: Math.random()*20 - 10, y: Math.random()*20 - 10},60));
+                                             {x: Math.random()*20 - 10, y: Math.random()*20 - 10}, 60));
 
         }
         this.d = new Date();
@@ -364,8 +336,9 @@ class Game{
     gameloop(){
 
         if(this.myPlayer.lives === 0){
-            this.gui.setDead(this.myPlayer.score);
+            this.gui.setDead();
         }else{
+
             //keyboard input logic
             if(this.leftKey === true){ 
                 this.myPlayer.turn(1);  
@@ -373,7 +346,7 @@ class Game{
             if(this.rightKey === true){  
                 this.myPlayer.turn(-1); 
             }
-            if((this.leftKey && this.rightKey) ||(!this.leftKey && !this.rightKey) ){
+            if((this.leftKey && this.rightKey) || (!this.leftKey && !this.rightKey) ){
                 this.myPlayer.turn(0);
             }
             if(this.upKey === true){
@@ -438,7 +411,7 @@ class Game{
                 this.asteroids[a].draw();
             }
             //explotions
-            for(var i = 0;i< this.explosions.length;i++){
+            for(var i = 0; i< this.explosions.length; i++){
                 if(!this.explosions[i]){
                     continue;
                 }
@@ -450,18 +423,15 @@ class Game{
 
             //gui
 
-            this.gui.update(this.myPlayer.score, this.myPlayer.lives, this.lvl);
-            
+            this.gui.update(this.myPlayer.score, this.myPlayer.lives, this.lvl);     
             this.myPlayer.draw();
-    }
+        }
     }
 }
 
 class Gui{
     constructor(){
     
-    //this.html = document.getElementById("gui");
-    //this.html.innerHTML = "score: 10 lives: lvl:";
     }
     update(score, lives, lvl){
         ctx.fillStyle = "white";
@@ -474,10 +444,8 @@ class Gui{
             livesplayer.location.x +=30;
         }
 
-        //this.html.innerHTML = "score: "+score + " lives: " + lives + " lvl: " + lvl;
     }
-    setDead(score){
-        //this.html.innerHTML = "DEAD Score: "+score;
+    setDead(){
         ctx.fillStyle = "white";
         ctx.font = "50px Arial";
         ctx.fillText("you died",screenWidth/2 -150,screenHeight/2);
@@ -542,7 +510,7 @@ class Asteroid{
         
 
 
-        //
+        // 
         if(this.location.x  > screenWidth + this.size){
             this.location.x = - this.size;
         }else if(this.location.x < - this.size){
@@ -556,9 +524,10 @@ class Asteroid{
     }
     collision(point){
         
-        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2)  +
-                                  Math.pow((this.location.y - point.y),2) );
-        if(distance < this.size ){
+        var distance = Math.sqrt (Math.pow((this.location.x - point.x),2) +
+                                  Math.pow((this.location.y - point.y),2));
+
+        if(distance < this.size){
             return true;
         }
         
@@ -586,7 +555,8 @@ class Explosion{
         var elapsedTime = this.d.getTime() - this.created;
         for(var i = 0; i < 12; i++){
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(this.x + Math.sin((Math.PI / 180)*30*i)*elapsedTime/20, this.y+ Math.cos((Math.PI / 180)*30*i)*elapsedTime/20,1,1);
+            ctx.fillRect(this.x + Math.sin((Math.PI / 180)*30*i)*elapsedTime/20,
+                         this.y+ Math.cos((Math.PI / 180)*30*i)*elapsedTime/20,1,1);
         }
     }
 }
